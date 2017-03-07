@@ -7,6 +7,8 @@
 #include "WProgram.h"
 #endif
 
+#include "FastRunningMedian.h"
+
 class HX711
 {
 	private:
@@ -14,7 +16,9 @@ class HX711
 		byte DOUT;		// Serial Data Output Pin
 		byte GAIN;		// amplification factor
 		long OFFSET = 0;	// used for tare weight
-		float SCALE = 1;	// used to return weight in grams, kg, ounces, whatever
+		float SCALE = 1.0f;	// used to return weight in grams, kg, ounces, whatever
+
+		FastRunningMedian<long, 32> samples;
 
 	public:
 		// define clock and data pin, channel, and gain factor
@@ -42,18 +46,27 @@ class HX711
 		// waits for the chip to be ready and returns a reading
 		long read();
 
-		// returns an average reading; times = how many times to read
-		long read_average(byte times = 10);
+
+		// fill buffer with reads;
+		void sample();
+		long read_raw_average(byte times = 32);
+
+		// returns an average reading
+		float get_average();
+		float get_minimum();
+		float get_maximum();
+		float get_median();
+		float get_variance();
 
 		// returns (read_average() - OFFSET), that is the current value without the tare weight; times = how many readings to do
-		double get_value(byte times = 1);
+		// double get_value(byte times = 1);
 
 		// returns get_value() divided by SCALE, that is the raw value divided by a value obtained via calibration
 		// times = how many readings to do
-		float get_units(byte times = 1);
+		// float get_units(byte times = 1);
 
 		// set the OFFSET value for tare weight; times = how many times to read the tare value
-		void tare(byte times = 10);
+		void tare(byte times = 32);
 
 		// set the SCALE value; this value is used to convert the raw data to "human readable" data (measure units)
 		void set_scale(float scale = 1.f);
