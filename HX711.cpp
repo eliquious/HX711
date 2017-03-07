@@ -86,7 +86,45 @@ long HX711::read() {
 	return static_cast<long>(value);
 }
 
-long HX711::read_average(byte times) {
+void HX711::sample() {
+	byte times = samples.getSize();
+	for (byte i = 0; i < times; i++) {
+		samples.addValue(read());
+		yield();
+	}
+}
+
+float HX711::get_average() {
+	return (samples.getAverage() - OFFSET) / SCALE;
+}
+
+float HX711::get_minimum() {
+	return (samples.getMinimum() - OFFSET) / SCALE;
+}
+
+float HX711::get_maximum() {
+	return (samples.getMaximum() - OFFSET) / SCALE;
+}
+
+float HX711::get_variance() {
+	float sum_x = 0, sum_x2 = 0, mean = 0, value = 0;
+	byte size = samples.getSize();
+	byte i = size;
+	while (i > 0) {
+		i--;
+		value = (samples.getIndex(i) - OFFSET) / SCALE;
+		sum_x += value;
+		sum_x2 += value * value;
+	}
+	mean = sum_x / size;
+	return abs((sum_x2 / size) - (mean * mean));
+}
+
+float HX711::get_median() {
+	return (samples.getMedian() - OFFSET) / SCALE;
+}
+
+long HX711::read_raw_average(byte times) {
 	long sum = 0;
 	for (byte i = 0; i < times; i++) {
 		sum += read();
@@ -95,16 +133,8 @@ long HX711::read_average(byte times) {
 	return sum / times;
 }
 
-double HX711::get_value(byte times) {
-	return read_average(times) - OFFSET;
-}
-
-float HX711::get_units(byte times) {
-	return get_value(times) / SCALE;
-}
-
 void HX711::tare(byte times) {
-	double sum = read_average(times);
+	double sum = read_raw_average(times);
 	set_offset(sum);
 }
 
